@@ -1,0 +1,10 @@
+{
+  "name": "rune-clicker",
+  "version": "0.1.0",
+  "private": true,
+  "description": "A Norse idle/clicker game built in plain HTML, CSS and JavaScript.",
+  "scripts": {
+    "test": "node --test tests/*.test.js",
+    "sim": "node tools/sim.js 3 4"
+  }
+}
