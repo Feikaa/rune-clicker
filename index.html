@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0d1117">
+  <meta name="description" content="Rune Clicker: a Norse idle game. Mine Blank Runes, imbue them across the nine realms, climb to Asgard and bring on Ragnarök.">
+  <title>Rune Clicker</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%230d1117'/%3E%3Cpath d='M36 12 L36 88 M36 14 L64 32 M36 38 L64 56' fill='none' stroke='%23ffd34d' stroke-width='9' stroke-linecap='round'/%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div id="app">
+    <header class="topbar">
+      <div class="res res-blank" title="Blank Runes">
+        <span class="res-icon" id="blankIcon"></span>
+        <span class="res-main"><b data-val="blank">0</b><small class="cap">/ <span data-val="cap">0</span></small></span>
+        <span class="res-sub"><span data-val="rate">0</span>/s</span>
+      </div>
+      <div class="res res-seeds hidden" id="seedsBox" title="Yggdrasil Seeds">
+        <span class="seed-icon"></span><b data-val="seeds">0</b>
+      </div>
+      <div class="res res-clock" title="Run clock (active play time)">
+        <b data-val="clock">0:00</b>
+        <span class="res-sub" data-val="target"></span>
+      </div>
+    </header>
+
+    <div id="banners" class="banners"></div>
+
+    <div class="layout">
+      <section class="stage">
+        <button id="rune" class="rune-btn" aria-label="Mine a Blank Rune"></button>
+        <div class="click-info"><span data-val="click">1</span> per click <span class="streak" data-val="streak"></span></div>
+        <div id="floaters" class="floaters" aria-hidden="true"></div>
+      </section>
+
+      <section class="panels">
+        <nav class="tabs" id="tabs" role="tablist"></nav>
+        <div id="tab-realms" class="tab-body"></div>
+        <div id="tab-tree" class="tab-body hidden"></div>
+        <div id="tab-seeds" class="tab-body hidden"></div>
+        <div id="tab-settings" class="tab-body hidden"></div>
+      </section>
+    </div>
+  </div>
+
+  <div id="modal" class="modal hidden" role="dialog" aria-modal="true"><div class="modal-box" id="modalBox"></div></div>
+  <div id="toasts" class="toasts" aria-live="polite"></div>
+
+  <script src="js/data.js"></script>
+  <script src="js/game.js"></script>
+  <script src="js/glyphs.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>
