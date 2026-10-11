@@ -33,7 +33,7 @@ function candidates(s, st) {
     if (SKIP.has(u.id) || !Game.has(s.run, u.realm) || (s.run.upgrades[u.id] || 0) >= u.max) continue;
     // Only raise the cap when it is actually limiting.
     if (u.effects[0].stat === 'capMult' && s.run.blank < Game.cap(s, st) * 0.9) continue;
-    out.push({ kind: 'up', id: u.id, cost: { [u.realm]: Game.upgradeCost(s, u.id, st) }, weight: 1 });
+    out.push({ kind: 'up', id: u.id, cost: Game.upgradeCost(s, u.id, st), weight: 1 });
   }
   for (const u of D.treeUpgrades) {
     if (!Game.treeAvailable(s, u.id) || (s.run.tree[u.id] || 0) >= u.max) continue;

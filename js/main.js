@@ -11,6 +11,7 @@
 
   let state;
   let modalKind = null; // 'choice' | 'failed' | 'info' | null
+  let lastImbueEl = null; // button behind the latest imbue, for the double-imbue pop
   const modalQueue = [];
 
   // ------------------------------------------------------------------ persistence
@@ -63,6 +64,7 @@
     state.events = [];
     evs.forEach((e) => {
       if (e.type === 'discover') UI.discoverToast(e.key);
+      else if (e.type === 'double') UI.pop(lastImbueEl, `Double! +${UI.fmt(e.extra)}`, window.RC.DATA.realms[e.realm].color);
       else if (e.type === 'unlock' && e.realm === 'svartalfheim' && state.meta.ragnaroks === 0) UI.toast('<div><b>The World Tree</b><p>Yggdrasil reveals itself. A new tab has opened.</p></div>', '#7fd6a8');
       else if (e.type === 'unlock' && e.realm === 'asgard') UI.toast('<div><b>Ragnarök</b><p>Asgard is reached. The end of the world is yours to call.</p></div>', '#ff8a73', 7000);
       else if (e.type === 'freeMiner') UI.toast("<div><b>Tinkerer's Luck</b><p>A second miner tags along for free.</p></div>", '#c9824a', 2500);
@@ -78,7 +80,8 @@
       case 'tab': UI.ui.tab = a; break;
       case 'realm': UI.ui.realm = a; break;
       case 'goto': UI.ui.realm = a; UI.ui.tab = 'realms'; window.scrollTo({ top: 0, behavior: 'smooth' }); break;
-      case 'imbue': Game.imbue(state, a, b === 'max' ? 'max' : Number(b)); break;
+      case 'imbue': lastImbueEl = el; Game.imbue(state, a, b === 'max' ? 'max' : Number(b)); break;
+      case 'imbueMissing': lastImbueEl = el; Game.imbueMissing(state); break;
       case 'buy': Game.buyUpgrade(state, a); break;
       case 'tree': Game.buyTree(state, a); break;
       case 'perm': Game.buyPerm(state, a); save(); break;
@@ -114,7 +117,7 @@
       }
       case 'info':
         queueModal(a === 'blessing'
-          ? `<h2>Odin's Blessing</h2><p class="lead">The Allfather watches your first climb.</p><p class="center">Realm unlocks and upgrades cost 40% less this run. The blessing ends at Ragnarök.</p><div class="actions"><button class="btn" data-act="close">Close</button></div>`
+          ? `<h2>Odin's Blessing</h2><p class="lead">The Allfather watches your first climb.</p><p class="center">${UI.blessingText()}</p><div class="actions"><button class="btn" data-act="close">Close</button></div>`
           : UI.runInfoModal(state), true);
         break;
       case 'close': closeInfo(); break;
@@ -165,7 +168,7 @@
     else { x = box.left - stage.left + box.width / 2; y = box.top - stage.top + box.height / 3; }
     x += (Math.random() - 0.5) * 30;
     if (res.capped && res.gained <= 0) UI.floater('Full', 'capped', x, y);
-    else UI.floater((res.crit ? 'Crit! +' : '+') + UI.fmt(res.gained, true), res.crit ? 'crit' : '', x, y);
+    else UI.floater((res.crit ? 'Crit! +' : '+') + UI.fmtRound(res.gained), res.crit ? 'crit' : '', x, y);
     btn.classList.add('hit');
     setTimeout(() => btn.classList.remove('hit'), 70);
   }

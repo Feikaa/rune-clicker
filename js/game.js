@@ -176,11 +176,16 @@
 
   const blessMult = (run, key) => (run.blessing ? D().blessing[key] : 1);
 
+  // Returns { realm: amount }. Upgrades with `also` cost a share of an earlier
+  // realm's runes too, worth secondaryCostShare of the main cost in Blank Runes.
   Game.upgradeCost = function (s, id, st) {
     st = st || statsFor(s);
-    const u = idx().upgrades[id];
+    const d = D(), u = idx().upgrades[id];
     const lvl = s.run.upgrades[id] || 0;
-    return Math.ceil(u.base * Math.pow(u.growth, lvl) * blessMult(s.run, 'upgradeCostMult') * Math.max(D().minUpgradeCostMult, st.upgradeCostMult));
+    const main = u.base * Math.pow(u.growth, lvl) * blessMult(s.run, 'upgradeCostMult') * Math.max(d.minUpgradeCostMult, st.upgradeCostMult);
+    const out = { [u.realm]: Math.ceil(main) };
+    if (u.also) out[u.also] = Math.ceil(main * d.secondaryCostShare * d.realms[u.realm].imbueCost / d.realms[u.also].imbueCost);
+    return out;
   };
 
   Game.treeCost = function (s, id, st) {
@@ -229,7 +234,9 @@
     const run = s.run;
     const cap = Game.cap(s, st);
     const before = run.blank;
-    run.blank = Math.min(cap, Math.max(run.blank, run.blank + amount));
+    // Never take runes away: a stock above the cap (e.g. a starting bonus) just stops growing.
+    if (amount <= 0 || before >= cap) return 0;
+    run.blank = Math.min(cap, before + amount);
     const gained = run.blank - before;
     run.runBlank += gained;
     s.meta.lifetimeBlank += gained;
@@ -276,10 +283,31 @@
       if (n <= 100) { for (let i = 0; i < n; i++) if (Game.rng() < st.doubleChance) doubles++; }
       else doubles = Math.floor(n * Math.min(1, st.doubleChance) + Game.rng());
     }
-    const gained = (n + doubles) * Game.imbueYield(s, realm, st);
+    const yld = Game.imbueYield(s, realm, st);
+    const gained = (n + doubles) * yld;
     run.runes[realm] += gained;
     discover(s, realm);
+    if (doubles > 0) emit(s, 'double', { realm, doubles, extra: doubles * yld });
     return gained;
+  };
+
+  // Imbue exactly what the next realm unlock still needs. When Blank Runes
+  // fall short, every missing rune type gets the same share of them.
+  Game.imbueMissing = function (s) {
+    const next = Game.nextRealm(s);
+    if (!next || frozen(s)) return false;
+    const st = statsFor(s), run = s.run;
+    const cost = Game.unlockCost(s, next, st);
+    const needs = Object.keys(cost).map((r) => {
+      const n = Math.ceil(Math.max(0, cost[r] - run.runes[r]) / Game.imbueYield(s, r, st) - 1e-9);
+      return { r, n, blank: n * Game.imbueCost(s, r, st) };
+    }).filter((x) => x.n > 0);
+    const total = needs.reduce((a, x) => a + x.blank, 0);
+    if (!total) return false;
+    const share = Math.min(1, run.blank / total);
+    let any = false;
+    needs.forEach((x) => { if (Game.imbue(s, x.r, Math.floor(x.n * share + 1e-9)) > 0) any = true; });
+    return any;
   };
 
   Game.buyUpgrade = function (s, id) {
@@ -290,8 +318,8 @@
     if (lvl >= u.max) return false;
     const st = statsFor(s);
     const cost = Game.upgradeCost(s, id, st);
-    if (run.runes[u.realm] < cost) return false;
-    run.runes[u.realm] -= cost;
+    if (!canAfford(run, cost)) return false;
+    pay(run, cost);
     run.upgrades[id] = lvl + 1;
     if (id === 's_miner' && st.freeMinerChance > 0 && Game.rng() < st.freeMinerChance) {
       run.bonusMiners++;
@@ -459,7 +487,12 @@
     const d = D(), I = idx(), run = s.run;
     const st = statsFor(s);
     const base = d.seeds.base + st.seedFlat;
-    const runes = Math.floor(Math.pow(run.runBlank / d.seeds.runeDiv, d.seeds.runePow));
+    // Log curve: production explodes late, so a root curve would pay out far too much.
+    const runes = Math.max(0, Math.floor(d.seeds.runeLogMult * Math.log10(Math.max(1, run.runBlank / d.seeds.runeDiv))));
+    // The tutorial run pays a fixed amount so lingering in Asgard can't snowball it.
+    if (s.meta.ragnaroks === 0 && !failed) {
+      return { base, runes, tier: null, speedBonus: 0, curseMult: 1, seedMult: 1, failed: false, firstRun: true, total: d.seeds.firstRun };
+    }
     const tier = failed ? null : Game.speedTier(s);
     const speedBonus = tier ? tier.bonus : 0;
     const curseMult = run.curses.reduce((m, c) => m * (I.curses[c] ? I.curses[c].seedMult : 1), 1);
@@ -555,7 +588,11 @@
       lastSaved: loaded.lastSaved || Date.now(),
       events: [],
     };
-    D().realmOrder.forEach((r) => { if (typeof s.run.runes[r] !== 'number') s.run.runes[r] = 0; });
+    // Repair any non-finite numbers (older builds could produce NaN).
+    const finite = (v) => (typeof v === 'number' && isFinite(v) ? v : 0);
+    D().realmOrder.forEach((r) => { s.run.runes[r] = finite(s.run.runes[r]); });
+    ['blank', 'runBlank', 'activeTime'].forEach((k) => { s.run[k] = finite(s.run[k]); });
+    s.meta.lifetimeBlank = finite(s.meta.lifetimeBlank);
     return s;
   };
 

@@ -275,3 +275,68 @@ test('every data reference points at something real', () => {
   const all = [...D.upgrades, ...D.treeUpgrades, ...D.permUpgrades, ...D.fates, ...D.boons, ...D.curses].flatMap((x) => x.effects);
   all.forEach((e) => assert.ok(stats.has(e.stat) || /^(yield|unlockCost|upgradeScale|boonScale)_/.test(e.stat), e.stat));
 });
+
+test('the first Ragnarök pays a fixed amount, however much Asgard was upgraded', () => {
+  const s = fresh();
+  rich(s);
+  while (Game.unlockNext(s));
+  D.upgrades.filter((u) => u.realm === 'asgard').forEach((u) => { while (Game.buyUpgrade(s, u.id)); });
+  s.run.runBlank = 1e30;
+  assert.equal(Game.ragnarok(s).total, D.seeds.firstRun);
+});
+
+test('later Seed payouts grow slowly with runes mined', () => {
+  const s = fresh();
+  s.meta.ragnaroks = 1;
+  s.run.runBlank = 1e12;
+  const a = Game.seedReward(s).runes;
+  s.run.runBlank = 1e24;
+  const b = Game.seedReward(s).runes;
+  assert.ok(b > a && b <= a * 4, `${a} -> ${b}`); // a trillion times more runes, at most 4x the Seeds
+});
+
+test('upgrades with a secondary realm cost both rune types', () => {
+  const s = fresh();
+  s.run.unlocked = D.realmOrder.slice(0, 5);
+  const cost = Game.upgradeCost(s, 'mu_temper');
+  assert.deepEqual(Object.keys(cost).sort(), ['muspelheim', 'niflheim']);
+  s.run.runes.muspelheim = cost.muspelheim;
+  assert.equal(Game.buyUpgrade(s, 'mu_temper'), false, 'needs the Niflheim runes too');
+  s.run.runes.niflheim = cost.niflheim;
+  assert.equal(Game.buyUpgrade(s, 'mu_temper'), true);
+  assert.equal(s.run.runes.muspelheim, 0);
+  assert.equal(s.run.runes.niflheim, 0);
+});
+
+test('imbue-missing makes exactly what the next unlock needs', () => {
+  const s = fresh();
+  s.run.blank = 1e6;
+  assert.ok(Game.imbueMissing(s));
+  assert.ok(Game.canUnlock(s));
+  assert.ok(s.run.blank > 1e6 - 1000);
+});
+
+test('double imbues emit an event for the UI', () => {
+  const s = fresh();
+  s.run.blank = 1e4;
+  s.run.fate = null;
+  s.run.boons = { twin_spark: 3 };
+  s.events = [];
+  Game.rng = () => 0; // every roll succeeds
+  Game.imbue(s, 'midgard', 5);
+  const ev = s.events.find((e) => e.type === 'double');
+  assert.ok(ev);
+  assert.equal(ev.doubles, 5);
+  assert.equal(s.run.runes.midgard, 10);
+});
+
+test('a Blank Rune stock above the cap is kept, not clamped into a negative gain', () => {
+  const s = fresh();
+  s.run.blank = Game.cap(s) * 3;
+  const before = s.run.blank;
+  Game.click(s);
+  Game.tick(s, 1);
+  assert.equal(s.run.blank, before);
+  assert.equal(s.run.runBlank, 0);
+  assert.ok(Number.isFinite(Game.productionRate(s)));
+});
