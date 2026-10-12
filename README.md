@@ -24,6 +24,7 @@ Progress saves to `localStorage` every 10 seconds and when the tab is hidden. Ex
 | `css/style.css` | All styling (mobile-first, two columns from 900px) |
 | `js/data.js` | **Every balance number**: realms, costs, upgrades, World Tree, Seed shop, fates, boons, curses, Seed tiers |
 | `js/game.js` | Game logic on a plain state object. No DOM, so it runs in Node |
+| `js/audio.js` | Sound effects synthesized with the Web Audio API (no audio files) |
 | `js/glyphs.js` | Rune glyphs drawn as SVG strokes (Elder Futhark, one per realm) |
 | `js/ui.js` | Rendering: panels rebuild only on structural change; numbers refresh every frame |
 | `js/main.js` | Main loop, input, save/load, offline progress, modal flow |

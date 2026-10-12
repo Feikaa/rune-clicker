@@ -276,3 +276,7 @@ textarea.save { width: 100%; min-height: 110px; background: var(--bg); color: va
 .skip-box p { margin: 0 0 10px; }
 .skip-box b { color: var(--text); }
 .card .skip-box { margin-top: 8px; border-top: 0; padding-top: 0; }
+.sound-row { display: flex; align-items: center; gap: 12px; margin-top: 10px; }
+.sound-row .btn { flex: 0 0 auto; min-width: 84px; }
+.sound-row input[type=range] { flex: 1; accent-color: var(--gold); }
+.sound-row input:disabled { opacity: 0.4; }

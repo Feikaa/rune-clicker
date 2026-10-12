@@ -241,6 +241,13 @@
       </div>
     </div>
     <div class="card">
+      <h3>Sound</h3>
+      <div class="sound-row">
+        <button class="btn" data-act="sound" aria-pressed="${s.settings.sound !== false}">${s.settings.sound !== false ? '🔊 On' : '🔇 Off'}</button>
+        <input id="volume" type="range" min="0" max="100" step="5" value="${Math.round((typeof s.settings.volume === 'number' ? s.settings.volume : 0.6) * 100)}" aria-label="Volume" ${s.settings.sound !== false ? '' : 'disabled'}>
+      </div>
+    </div>
+    <div class="card">
       <h3>Save</h3>
       <p class="muted">The game saves itself every few seconds in this browser.</p>
       <div class="btn-row"><button class="btn" data-act="save">Save now</button><button class="btn" data-act="export">Export</button><button class="btn" data-act="import">Import</button></div>
@@ -269,7 +276,7 @@
   function structureKey(s) {
     const r = s.run;
     return JSON.stringify([ui.tab, ui.realm, r.unlocked, r.upgrades, r.tree, r.boons, r.fate, r.curses, !!r.timer, r.blessing,
-      s.meta.perm, s.meta.ragnaroks, s.meta.skippedTutorial, s.meta.seeds > 0, r.autoWeights, s.meta.history.length]);
+      s.meta.perm, s.meta.ragnaroks, s.meta.skippedTutorial, s.settings.sound, s.meta.seeds > 0, r.autoWeights, s.meta.history.length]);
   }
 
   function setHtml(el, key, html) {

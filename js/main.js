@@ -4,7 +4,7 @@
 (function () {
   'use strict';
 
-  const { Game, UI } = window.RC;
+  const { Game, UI, Sound } = window.RC;
   const SAVE_KEY = 'runeClicker.save.v1';
   const AUTOSAVE_MS = 10000;
   const OFFLINE_GAP = 5; // seconds of frame gap treated as time away
@@ -64,13 +64,29 @@
     state.events = [];
     evs.forEach((e) => {
       if (e.type === 'discover') UI.discoverToast(e.key);
-      else if (e.type === 'double') UI.pop(lastImbueEl, `Double! +${UI.fmt(e.extra)}`, window.RC.DATA.realms[e.realm].color);
+      else if (e.type === 'double') {
+        Sound.double();
+        UI.pop(lastImbueEl, `Double! +${UI.fmt(e.extra)}`, window.RC.DATA.realms[e.realm].color);
+      }
       else if (e.type === 'unlock' && e.realm === 'svartalfheim' && !Game.tutorialDone(state.meta)) UI.toast('<div><b>The World Tree</b><p>Yggdrasil reveals itself. A new tab has opened.</p></div>', '#7fd6a8');
       else if (e.type === 'unlock' && e.realm === 'asgard') UI.toast('<div><b>Ragnarök</b><p>Asgard is reached. The end of the world is yours to call.</p></div>', '#ff8a73', 7000);
       else if (e.type === 'freeMiner') UI.toast("<div><b>Tinkerer's Luck</b><p>A second miner tags along for free.</p></div>", '#c9824a', 2500);
       else if (e.type === 'freeBoon') UI.toast(`<div><b>Wanderer's Road</b><p>You start with ${Game.lookup().boons[e.boon].name}.</p></div>`, '#c6d6ff');
       else if (e.type === 'timerBeaten') UI.toast(`<div><b>Chain held</b><p>You reached Asgard in time. ${Game.lookup().curses[e.curse].name} is satisfied.</p></div>`, '#7fd6a8');
     });
+  }
+
+  // ------------------------------------------------------------------ sound
+  const realmIndex = (id) => window.RC.DATA.realmOrder.indexOf(id);
+
+  function bought(el, ok, level, max) {
+    if (ok) Sound.buy(level, max);
+    else if (!el.classList.contains('maxed')) Sound.deny();
+  }
+
+  function applySoundSettings() {
+    Sound.setEnabled(state.settings.sound !== false);
+    Sound.setVolume(typeof state.settings.volume === 'number' ? state.settings.volume : 0.6);
   }
 
   // ------------------------------------------------------------------ actions
@@ -80,13 +96,29 @@
       case 'tab': UI.ui.tab = a; break;
       case 'realm': UI.ui.realm = a; break;
       case 'goto': UI.ui.realm = a; UI.ui.tab = 'realms'; window.scrollTo({ top: 0, behavior: 'smooth' }); break;
-      case 'imbue': lastImbueEl = el; Game.imbue(state, a, b === 'max' ? 'max' : Number(b)); break;
-      case 'imbueMissing': lastImbueEl = el; Game.imbueMissing(state); break;
-      case 'buy': Game.buyUpgrade(state, a); break;
-      case 'tree': Game.buyTree(state, a); break;
-      case 'perm': Game.buyPerm(state, a); save(); break;
+      case 'imbue':
+        lastImbueEl = el;
+        if (Game.imbue(state, a, b === 'max' ? 'max' : Number(b)) > 0) Sound.imbue(realmIndex(a));
+        else Sound.deny();
+        break;
+      case 'imbueMissing':
+        lastImbueEl = el;
+        if (Game.imbueMissing(state)) Sound.imbue(realmIndex(Game.nextRealm(state)) - 1);
+        else Sound.deny();
+        break;
+      case 'buy': bought(el, Game.buyUpgrade(state, a), state.run.upgrades[a], Game.lookup().upgrades[a].max); break;
+      case 'tree': bought(el, Game.buyTree(state, a), state.run.tree[a], Game.lookup().tree[a].max); break;
+      case 'perm': bought(el, Game.buyPerm(state, a), state.meta.perm[a], Game.lookup().perm[a].max); save(); break;
       case 'unlock':
-        if (Game.unlockNext(state)) { UI.ui.realm = state.run.unlocked[state.run.unlocked.length - 1]; save(); }
+        if (Game.unlockNext(state)) { UI.ui.realm = state.run.unlocked[state.run.unlocked.length - 1]; Sound.realm(); save(); }
+        else Sound.deny();
+        break;
+      case 'sound':
+        state.settings.sound = !state.settings.sound;
+        applySoundSettings();
+        Sound.unlock();
+        Sound.buy(1, 2);
+        save();
         break;
       case 'auto': {
         const w = state.run.autoWeights;
@@ -142,6 +174,7 @@
         if (!txt) break;
         try {
           state = Game.deserialize(decodeURIComponent(escape(atob(txt.trim()))));
+          applySoundSettings();
           save();
           UI.render(state, true);
           UI.toast('<div><b>Save imported</b></div>', null, 2000);
@@ -170,6 +203,7 @@
     if (UI.modalOpen()) return;
     const res = Game.click(state);
     if (!res) return;
+    Sound.click(res.crit);
     const btn = document.getElementById('rune');
     const box = btn.getBoundingClientRect();
     const stage = btn.parentElement.getBoundingClientRect();
@@ -221,6 +255,20 @@
       if (sum && (sum.mined > 0 || sum.clickOnly) && away > 60) queueModal(UI.offlineModal(sum), true);
     }
     state.events = [];
+
+    applySoundSettings();
+    // Browsers only allow audio after a user gesture.
+    ['pointerdown', 'keydown'].forEach((t) => document.addEventListener(t, () => Sound.unlock(), { capture: true }));
+    document.addEventListener('input', (e) => {
+      if (e.target.id !== 'volume') return;
+      state.settings.volume = Number(e.target.value) / 100;
+      applySoundSettings();
+    });
+    document.addEventListener('change', (e) => {
+      if (e.target.id !== 'volume') return;
+      Sound.buy(1, 2);
+      save();
+    });
 
     const rune = document.getElementById('rune');
     rune.addEventListener('click', mine);
