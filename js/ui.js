@@ -100,6 +100,9 @@
     </button></li>`;
   }
 
+  // Stats that feed passive income, which Ymir's Hands converts into click power.
+  const PASSIVE_STATS = new Set(['miners', 'minerBase', 'minerMult', 'minerPerRealm', 'minerCrit', 'flatRate', 'flatPerRealm', 'interest']);
+
   function realmPanel(s, id, st) {
     const r = realm(id);
     const cost = Game.imbueCost(s, id, st);
@@ -117,7 +120,7 @@
         <div class="btn-row">${btn(1, '×1')}${btn(10, '×10')}${btn(100, '×100')}${btn('max', 'Max <span class="max-n" data-val="imbueMax:' + id + '"></span>')}</div>
         ${autoOn ? `<div class="auto-row">Auto-imbue share <button class="btn" data-act="auto:${id}:-1" aria-label="Lower auto-imbue share">−</button><b>${w}</b><button class="btn" data-act="auto:${id}:1" aria-label="Raise auto-imbue share">+</button><span>${w ? '' : 'off'}</span></div>` : ''}
       </div>
-      ${st.clickOnly && id === 'svartalfheim' ? `<p class="fate-note">Ymir's Hands: your miners don't dig. Each one adds ${Math.round(st.minerToClick * 100)}% of its output to every click instead.</p>` : ''}
+      ${st.clickOnly && D().upgrades.some((u) => u.realm === id && u.effects.some((e) => PASSIVE_STATS.has(e.stat))) ? `<p class="fate-note">Ymir's Hands: upgrades here that would earn Blank Runes per second add ${Math.round(st.passiveToClick * 100)}% of that output to every click instead.</p>` : ''}
       <ul class="list">${D().upgrades.filter((u) => u.realm === id).map((u) => upgradeItem(s, u, st)).join('')}</ul>
     </div>`;
   }

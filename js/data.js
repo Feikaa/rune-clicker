@@ -27,7 +27,7 @@
       streakMax: 0.25,
       seedMult: 1, seedFlat: 0,
       overtime: 0, freeMinerChance: 0, tribute: 0,
-      clickOnly: 0, minerToClick: 0,
+      clickOnly: 0, passiveToClick: 0,
       startBlank: 0, startMiners: 0, rerolls: 0,
     },
 
@@ -234,7 +234,7 @@
       { id: 'dwarven_union', name: 'Dwarven Union', desc: 'Miners 50% stronger, click power 25% weaker', effects: [{ stat: 'minerMult', op: 'mul', v: 1.5 }, { stat: 'clickMult', op: 'mul', v: 0.75 }] },
       { id: 'giants_appetite', name: "Giants' Appetite", desc: 'Jotunheim upgrades twice as strong, Jotunheim costs +50% to unlock', effects: [{ stat: 'upgradeScale_jotunheim', op: 'mul', v: 2 }, { stat: 'unlockCost_jotunheim', op: 'mul', v: 1.5 }] },
       { id: 'quiet_dead', name: 'Quiet Dead', desc: 'Helheim 40% cheaper to unlock, Alfheim 40% costlier', effects: [{ stat: 'unlockCost_helheim', op: 'mul', v: 0.6 }, { stat: 'unlockCost_alfheim', op: 'mul', v: 1.4 }] },
-      { id: 'ymirs_hands', name: "Ymir's Hands", desc: 'Only clicking mines: miners, flat income and stored-rune growth stop. Each miner adds a fifth of its output to every click instead. Seeds ×1.4', seedMult: 1.4, effects: [{ stat: 'clickOnly', op: 'add', v: 1 }, { stat: 'minerToClick', op: 'add', v: 0.2 }] },
+      { id: 'ymirs_hands', name: "Ymir's Hands", desc: 'Only clicking mines. Everything that would earn Blank Runes per second (miners, flat income, stored-rune growth) adds a fifth of its output to every click instead. Seeds ×1.4', seedMult: 1.4, effects: [{ stat: 'clickOnly', op: 'add', v: 1 }, { stat: 'passiveToClick', op: 'add', v: 0.2 }] },
       { id: 'golden_age', name: 'Golden Age', desc: 'Asgard 40% cheaper, all other realms cost 10% more', effects: [{ stat: 'unlockCostMult', op: 'mul', v: 1.1 }, { stat: 'unlockCost_asgard', op: 'mul', v: 0.545 }] },
       { id: 'wanderers_road', name: "Wanderer's Road", desc: 'Start with a free tier of one random boon', pack: true, effects: [], special: 'freeBoon' },
       { id: 'heavy_hands', name: 'Heavy Hands', desc: 'Click power ×2, miners ×0.6', pack: true, effects: [{ stat: 'clickMult', op: 'mul', v: 2 }, { stat: 'minerMult', op: 'mul', v: 0.6 }] },

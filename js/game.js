@@ -149,7 +149,15 @@
 
   Game.flatRate = (s, st, gm) => (st.flatRate + st.flatPerRealm * realmCount(s.run)) * gm;
 
-  // Passive income per second. Zero under a click-only fate (Ymir's Hands).
+  // Everything that would mine Blank Runes per second without clicking: miners,
+  // flat income and stored-rune growth.
+  Game.passiveRate = function (s, st, gm) {
+    if (gm === undefined) gm = Game.globalMult(s, st);
+    return Game.minerRate(s, st, gm) + Game.flatRate(s, st, gm) + s.run.blank * st.interest;
+  };
+
+  // Passive income actually received per second (excluding stored-rune growth,
+  // which tick applies itself). Zero under a click-only fate (Ymir's Hands).
   Game.productionRate = function (s, st) {
     st = st || statsFor(s);
     if (st.clickOnly) return 0;
@@ -162,9 +170,11 @@
   Game.clickValue = function (s, st) {
     st = st || statsFor(s);
     const gm = Game.globalMult(s, st);
-    // Forge Bond (and Ymir's Hands) turn part of the miners' output into click power.
-    const fromMiners = (st.clickFromMiners + st.minerToClick) * Game.minerRate(s, st, gm);
-    return (st.clickFlat * gm + fromMiners) * st.clickMult * (1 + Game.streakBonus(s, st));
+    // Forge Bond turns part of the miners' output into click power; Ymir's Hands
+    // does the same with all passive income, which it otherwise switches off.
+    const fromMiners = st.clickFromMiners * Game.minerRate(s, st, gm);
+    const fromPassive = st.passiveToClick ? st.passiveToClick * Game.passiveRate(s, st, gm) : 0;
+    return (st.clickFlat * gm + fromMiners + fromPassive) * st.clickMult * (1 + Game.streakBonus(s, st));
   };
 
   Game.cap = function (s, st) {
