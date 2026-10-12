@@ -280,3 +280,23 @@ textarea.save { width: 100%; min-height: 110px; background: var(--bg); color: va
 .sound-row .btn { flex: 0 0 auto; min-width: 84px; }
 .sound-row input[type=range] { flex: 1; accent-color: var(--gold); }
 .sound-row input:disabled { opacity: 0.4; }
+
+/* ------------------------------------------------------------ World Tree growth */
+.tree-layout { display: grid; gap: 4px; }
+@media (min-width: 1100px) {
+  .tree-layout { grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+  .tree-card { position: sticky; top: 140px; }
+  .tree-layout .section-title { margin-top: 0; }
+}
+@media (max-width: 899px) { .tree-map { max-height: 52vh; } }
+.twig-ghost { fill: none; stroke: #7fd6a840; stroke-width: 1.5; stroke-dasharray: 2 4; stroke-linecap: round; }
+.twig.grown .twig-ghost { stroke: #7fd6a814; }
+.twig-wood { fill: none; stroke: #8a6a44; stroke-width: 5; stroke-linecap: round; filter: drop-shadow(0 0 2px #7fd6a855); }
+.twig-leaf { fill: #7fd6a8; filter: drop-shadow(0 0 3px #7fd6a8aa); transform-box: fill-box; transform-origin: center; }
+.twig-bud { fill: #ffe08a; filter: drop-shadow(0 0 5px #ffd34d); transform-box: fill-box; transform-origin: center; animation: budGlow 2.4s ease-in-out infinite; }
+@keyframes budGlow { 50% { filter: drop-shadow(0 0 9px #ffd34d); } }
+.tree-spark { fill: #fffbe8; filter: drop-shadow(0 0 4px #fff) drop-shadow(0 0 10px #7fd6a8) drop-shadow(0 0 18px #ffd34d); pointer-events: none; }
+.tree-trail { fill: #c9ffe6; pointer-events: none; }
+.tree-burst { fill: none; stroke: #fff3c4; filter: drop-shadow(0 0 6px #ffd34d); pointer-events: none; }
+.tree-map.tree-flash { animation: treeFlash 0.8s ease-out; }
+@keyframes treeFlash { 0% { filter: brightness(1); } 20% { filter: brightness(1.45) drop-shadow(0 0 14px #7fd6a888); } 100% { filter: brightness(1); } }

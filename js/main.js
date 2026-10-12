@@ -84,6 +84,18 @@
     else if (!el.classList.contains('maxed')) Sound.deny();
   }
 
+  // Render first so the twig is at its new size, bring the map into view if
+  // it has scrolled away (it sits above the list on phones), then animate.
+  function growTree(id, from, to) {
+    UI.render(state);
+    const map = document.querySelector('.tree-map');
+    if (!map) return;
+    const r = map.getBoundingClientRect();
+    const hidden = r.bottom < 160 || r.top > window.innerHeight - 80;
+    if (hidden) window.scrollTo({ top: window.scrollY + r.top - 140, behavior: 'smooth' });
+    setTimeout(() => UI.animateTreeGrowth(id, from, to, () => Sound.bloom()), hidden ? 380 : 0);
+  }
+
   function applySoundSettings() {
     Sound.setEnabled(state.settings.sound !== false);
     Sound.setVolume(typeof state.settings.volume === 'number' ? state.settings.volume : 0.6);
@@ -107,7 +119,13 @@
         else Sound.deny();
         break;
       case 'buy': bought(el, Game.buyUpgrade(state, a), state.run.upgrades[a], Game.lookup().upgrades[a].max); break;
-      case 'tree': bought(el, Game.buyTree(state, a), state.run.tree[a], Game.lookup().tree[a].max); break;
+      case 'tree': {
+        const from = state.run.tree[a] || 0;
+        const ok = Game.buyTree(state, a);
+        bought(el, ok, state.run.tree[a], Game.lookup().tree[a].max);
+        if (ok) growTree(a, from, state.run.tree[a]);
+        break;
+      }
       case 'perm': bought(el, Game.buyPerm(state, a), state.meta.perm[a], Game.lookup().perm[a].max); save(); break;
       case 'unlock':
         if (Game.unlockNext(state)) { UI.ui.realm = state.run.unlocked[state.run.unlocked.length - 1]; Sound.realm(); save(); }

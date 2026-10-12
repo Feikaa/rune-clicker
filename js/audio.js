@@ -117,6 +117,13 @@
       }
     },
 
+    // World Tree growth arriving at its branch: a soft rising bloom.
+    bloom() {
+      if (!ready()) return;
+      [0, 0.07, 0.14, 0.21].forEach((at, i) => tone(note(659, i * 2 + 1), { at, attack: 0.02, decay: 0.45, gain: 0.07 }));
+      noise({ at: 0.02, freq: 7000, q: 0.7, decay: 0.35, gain: 0.08 });
+    },
+
     // Unlocking a realm: a low horn-like swell and a bright fifth.
     realm() {
       if (!ready()) return;

@@ -160,6 +160,120 @@
     niflheim: [66, 300], muspelheim: [234, 300], helheim: [150, 336],
   };
 
+  // Where each World Tree upgrade grows on the map. Every path starts on the
+  // trunk (at anchorY) and grows outward one segment per level.
+  const TRUNK = 'M150 360 C146 300 156 240 150 186 C146 140 154 90 150 42';
+  const TWIGS = {
+    t_eagle: { anchorY: 100, d: 'M150 100 C176 88 196 72 200 50 C202 38 194 30 186 34' },
+    t_branches: { anchorY: 150, d: 'M150 150 C126 156 104 160 90 150 C80 142 84 130 96 132' },
+    t_ratatoskr: { anchorY: 150, d: 'M150 150 C174 156 196 160 210 150 C220 142 216 130 204 132' },
+    t_fireice: { anchorY: 262, d: 'M150 262 C122 250 98 246 86 254 C78 260 82 270 94 268' },
+    t_mimir: { anchorY: 262, d: 'M150 262 C178 250 202 246 214 254 C222 260 218 270 206 268' },
+    t_roots: { anchorY: 350, d: 'M150 350 C126 358 96 368 72 362 C60 358 58 350 66 346' },
+    t_nidhogg: { anchorY: 350, d: 'M150 350 C174 358 204 368 228 362 C240 358 242 350 234 346' },
+  };
+
+  function twigsHtml() {
+    return D().treeUpgrades.filter((u) => TWIGS[u.id]).map((u) => `<g class="twig" data-twig="${u.id}">
+        <path class="twig-ghost" d="${TWIGS[u.id].d}"/>
+        <path class="twig-wood" d="${TWIGS[u.id].d}"/>
+        <g class="twig-leaves"></g>
+      </g>`).join('');
+  }
+
+  const SVGNS = 'http://www.w3.org/2000/svg';
+  function svgEl(tag, attrs) {
+    const el = document.createElementNS(SVGNS, tag);
+    for (const k in attrs) el.setAttribute(k, attrs[k]);
+    return el;
+  }
+
+  // Size each twig to its level and hang a leaf per level (a bud at max).
+  // Runs after the tree tab renders, because it needs real path lengths.
+  function layoutTreeGrowth(s) {
+    document.querySelectorAll('.tree-map .twig').forEach((g) => {
+      const u = Game.lookup().tree[g.dataset.twig];
+      const lvl = s.run.tree[u.id] || 0;
+      const wood = g.querySelector('.twig-wood');
+      const L = wood.getTotalLength();
+      wood.style.strokeDasharray = `${L} ${L}`;
+      wood.style.strokeDashoffset = L * (1 - lvl / u.max);
+      const leaves = g.querySelector('.twig-leaves');
+      leaves.innerHTML = '';
+      for (let i = 1; i <= lvl; i++) {
+        const at = L * (i / u.max);
+        const p = wood.getPointAtLength(at);
+        const q = wood.getPointAtLength(Math.max(0, at - 1));
+        const angle = Math.atan2(p.y - q.y, p.x - q.x) * 180 / Math.PI;
+        const tip = i === u.max;
+        const leaf = svgEl(tip ? 'circle' : 'ellipse', tip
+          ? { class: 'twig-bud', cx: p.x, cy: p.y, r: 4.5 }
+          : { class: 'twig-leaf', cx: p.x, cy: p.y, rx: 5, ry: 2.6, transform: `rotate(${angle + (i % 2 ? -40 : 40)} ${p.x} ${p.y})` });
+        leaf.dataset.level = i;
+        leaves.appendChild(leaf);
+      }
+      g.classList.toggle('grown', lvl > 0);
+    });
+  }
+
+  const reducedMotion = () => window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // A spark races up the trunk and out along the upgrade's twig, then bursts
+  // at the new tip as the twig grows and its new leaf appears.
+  function animateTreeGrowth(id, from, to, onArrive) {
+    const svg = document.querySelector('.tree-map');
+    const g = svg && svg.querySelector(`.twig[data-twig="${id}"]`);
+    if (!g || reducedMotion()) { if (onArrive) onArrive(); return; }
+    const max = Game.lookup().tree[id].max;
+    const wood = g.querySelector('.twig-wood');
+    const trunk = svg.querySelector('.trunk');
+    const L = wood.getTotalLength();
+    const T = trunk.getTotalLength();
+
+    // How far up the trunk the twig starts (the trunk path runs bottom to top).
+    let lo = 0, hi = T;
+    for (let i = 0; i < 20; i++) { const mid = (lo + hi) / 2; if (trunk.getPointAtLength(mid).y > TWIGS[id].anchorY) lo = mid; else hi = mid; }
+    const trunkLen = lo;
+    const twigLen = L * (to / max);
+    const total = trunkLen + twigLen;
+    const travel = 450 + total * 2.2;
+
+    wood.animate([{ strokeDashoffset: L * (1 - from / max) }, { strokeDashoffset: L * (1 - to / max) }],
+      { duration: 650, delay: travel * (trunkLen / total), easing: 'cubic-bezier(.2,.8,.2,1)', fill: 'backwards' });
+    const newLeaf = g.querySelector(`.twig-leaves [data-level="${to}"]`);
+    if (newLeaf) newLeaf.animate([{ transform: 'scale(0)', opacity: 0 }, { transform: 'scale(1.6)', opacity: 1, offset: 0.6 }, { transform: 'scale(1)', opacity: 1 }],
+      { duration: 500, delay: travel, easing: 'ease-out', fill: 'backwards' });
+
+    const spark = svgEl('circle', { class: 'tree-spark', r: 4.5 });
+    svg.appendChild(spark);
+    const start = performance.now();
+    let lastTrail = 0;
+    const pointAt = (d) => (d <= trunkLen ? trunk.getPointAtLength(d) : wood.getPointAtLength(Math.min(L, d - trunkLen)));
+    function step(now) {
+      const k = Math.min(1, (now - start) / travel);
+      const e = k < 0.5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2;
+      const p = pointAt(e * total);
+      spark.setAttribute('cx', p.x);
+      spark.setAttribute('cy', p.y);
+      if (now - lastTrail > 28) {
+        lastTrail = now;
+        const t = svgEl('circle', { class: 'tree-trail', cx: p.x, cy: p.y, r: 3 });
+        svg.insertBefore(t, spark);
+        t.animate([{ opacity: 0.8, r: 3 }, { opacity: 0, r: 0.5 }], { duration: 450, easing: 'ease-out' }).onfinish = () => t.remove();
+      }
+      if (k < 1) return requestAnimationFrame(step);
+      spark.remove();
+      const ring = svgEl('circle', { class: 'tree-burst', cx: p.x, cy: p.y, r: 4 });
+      svg.appendChild(ring);
+      ring.animate([{ r: 4, opacity: 1, strokeWidth: 3 }, { r: 30, opacity: 0, strokeWidth: 0.5 }], { duration: 650, easing: 'ease-out' }).onfinish = () => ring.remove();
+      svg.classList.remove('tree-flash');
+      void svg.getBoundingClientRect();
+      svg.classList.add('tree-flash');
+      if (onArrive) onArrive();
+    }
+    requestAnimationFrame(step);
+  }
+
   function treeMap(s) {
     const next = Game.nextRealm(s);
     const nodes = D().realmOrder.map((id) => {
@@ -175,12 +289,13 @@
     return `<svg class="tree-map" viewBox="0 0 300 380" role="group" aria-label="Yggdrasil">
       <defs><linearGradient id="bark" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#4a3a28"/><stop offset="1" stop-color="#2b2219"/></linearGradient></defs>
       <g fill="none" stroke-linecap="round">
-        <path d="M150 360 C146 300 156 240 150 186 C146 140 154 90 150 42" stroke="url(#bark)" stroke-width="18"/>
+        <path class="trunk" d="${TRUNK}" stroke="url(#bark)" stroke-width="18"/>
         <path d="M150 120 C120 110 90 104 64 92 M150 120 C180 110 210 104 236 92" stroke="#3d3022" stroke-width="9"/>
         <path d="M150 210 C120 206 84 202 56 196 M150 210 C180 206 216 202 244 196" stroke="#3d3022" stroke-width="8"/>
         <path d="M150 320 C120 316 92 310 66 300 M150 320 C180 316 208 310 234 300" stroke="#33281d" stroke-width="7"/>
         <path d="M60 60 C100 0 200 0 240 60 C280 110 220 140 150 130 C80 140 20 110 60 60 Z" fill="#7fd6a80d" stroke="#7fd6a826" stroke-width="1.5"/>
       </g>
+      ${twigsHtml()}
       ${nodes}
     </svg>`;
   }
@@ -201,9 +316,11 @@
   }
 
   function treeTab(s, st) {
-    return `<div class="card">${treeMap(s)}<p class="muted center">Tap a glowing realm to open it.</p></div>
-      <div class="section-title">Branches · reset by Ragnarök</div>
-      <ul class="list">${D().treeUpgrades.map((u) => treeItem(s, u, st)).join('')}</ul>`;
+    return `<div class="tree-layout">
+      <div class="card tree-card">${treeMap(s)}<p class="muted center">Tap a glowing realm to open it. Branches you buy grow on the tree.</p></div>
+      <div><div class="section-title">Branches · reset by Ragnarök</div>
+      <ul class="list">${D().treeUpgrades.map((u) => treeItem(s, u, st)).join('')}</ul></div>
+    </div>`;
   }
 
   function permItem(s, u) {
@@ -298,6 +415,7 @@
     const body = $('#tab-' + ui.tab);
     const html = ui.tab === 'realms' ? realmsTab(s, st) : ui.tab === 'tree' ? treeTab(s, st) : ui.tab === 'seeds' ? seedsTab(s) : settingsTab(s);
     setHtml(body, key, html);
+    if (ui.tab === 'tree') layoutTreeGrowth(s);
     $('#seedsBox').classList.toggle('hidden', !(Game.tutorialDone(s.meta) || s.meta.seeds > 0));
     refresh(s, st);
   }
@@ -549,7 +667,7 @@
   }
 
   root.RC.UI = {
-    ui, fmt, fmtRound, fmtTime, blessingText, pop, render, refresh, renderStone, floater, toast, discoverToast,
+    ui, fmt, fmtRound, fmtTime, blessingText, pop, animateTreeGrowth, render, refresh, renderStone, floater, toast, discoverToast,
     openModal, closeModal, modalOpen, choiceModal, ragnarokConfirm, ragnarokResult, failedModal, offlineModal, introModal, runInfoModal, boonDesc,
   };
 })(typeof globalThis !== 'undefined' ? globalThis : this);
