@@ -183,7 +183,7 @@
     last = now;
     if (dt > OFFLINE_GAP) {
       const sum = Game.applyOffline(state, dt);
-      if (sum && sum.mined > 0 && dt > 60) queueModal(UI.offlineModal(sum), true);
+      if (sum && (sum.mined > 0 || sum.clickOnly) && dt > 60) queueModal(UI.offlineModal(sum), true);
     } else if (dt > 0) {
       Game.tick(state, dt);
     }
@@ -208,7 +208,7 @@
     else {
       const away = (Date.now() - (state.lastSaved || Date.now())) / 1000;
       const sum = Game.applyOffline(state, away);
-      if (sum && sum.mined > 0 && away > 60) queueModal(UI.offlineModal(sum), true);
+      if (sum && (sum.mined > 0 || sum.clickOnly) && away > 60) queueModal(UI.offlineModal(sum), true);
     }
     state.events = [];
 

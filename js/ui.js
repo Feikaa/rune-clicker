@@ -117,6 +117,7 @@
         <div class="btn-row">${btn(1, '×1')}${btn(10, '×10')}${btn(100, '×100')}${btn('max', 'Max <span class="max-n" data-val="imbueMax:' + id + '"></span>')}</div>
         ${autoOn ? `<div class="auto-row">Auto-imbue share <button class="btn" data-act="auto:${id}:-1" aria-label="Lower auto-imbue share">−</button><b>${w}</b><button class="btn" data-act="auto:${id}:1" aria-label="Raise auto-imbue share">+</button><span>${w ? '' : 'off'}</span></div>` : ''}
       </div>
+      ${st.clickOnly && id === 'svartalfheim' ? `<p class="fate-note">Ymir's Hands: your miners don't dig. Each one adds ${Math.round(st.minerToClick * 100)}% of its output to every click instead.</p>` : ''}
       <ul class="list">${D().upgrades.filter((u) => u.realm === id).map((u) => upgradeItem(s, u, st)).join('')}</ul>
     </div>`;
   }
@@ -443,6 +444,7 @@
       <span>Reaching Asgard</span><span>${r.base}</span>
       <span>Runes mined</span><span>+${r.runes}</span>
       ${r.seedMult !== 1 ? `<span>Seed bonuses</span><span>×${r.seedMult.toFixed(2)}</span>` : ''}
+      ${r.fateMult !== 1 ? `<span>Fate</span><span>×${r.fateMult.toFixed(2)}</span>` : ''}
       ${r.curseMult !== 1 ? `<span>Curses</span><span>×${r.curseMult.toFixed(2)}</span>` : ''}
       ${r.tier ? `<span>Speed: ${r.tier.name}</span><span>${r.speedBonus ? '+' + Math.round(r.speedBonus * 100) + '%' : '—'}</span>` : ''}
       ${r.failed ? `<span>Run failed</span><span>×${D().seeds.failMult}</span>` : ''}
@@ -472,6 +474,11 @@
 
   function offlineModal(sum) {
     const runes = Object.keys(sum.runes).map((r) => `<span style="--rc:${realm(r).color}">${rglyph(r, 14)} +${fmt(sum.runes[r])}</span>`).join(' ');
+    if (sum.clickOnly && sum.mined <= 0) {
+      return `<h2>While You Slept</h2><p class="lead">You were away ${fmtDuration(sum.seconds)}.</p>
+        <p class="center">Under Ymir's Hands only your own clicks mine, so nothing was dug while you were gone.</p>
+        <div class="actions"><button class="btn primary" data-act="close">Back to work</button></div>`;
+    }
     return `<h2>While You Slept</h2><p class="lead">You were away ${fmtDuration(sum.seconds)}.</p>
       <p class="center">Your miners dug <b>${fmt(sum.mined)}</b> Blank Runes${sum.capped ? ` (capped at ${fmtDuration(sum.used)} away)` : ''}.</p>
       ${runes ? `<p class="center">${runes}</p>` : ''}

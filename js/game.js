@@ -144,8 +144,10 @@
 
   Game.flatRate = (s, st, gm) => (st.flatRate + st.flatPerRealm * realmCount(s.run)) * gm;
 
+  // Passive income per second. Zero under a click-only fate (Ymir's Hands).
   Game.productionRate = function (s, st) {
     st = st || statsFor(s);
+    if (st.clickOnly) return 0;
     const gm = Game.globalMult(s, st);
     return Game.minerRate(s, st, gm) + Game.flatRate(s, st, gm);
   };
@@ -155,7 +157,8 @@
   Game.clickValue = function (s, st) {
     st = st || statsFor(s);
     const gm = Game.globalMult(s, st);
-    const fromMiners = st.clickFromMiners * Game.minerRate(s, st, gm);
+    // Forge Bond (and Ymir's Hands) turn part of the miners' output into click power.
+    const fromMiners = (st.clickFromMiners + st.minerToClick) * Game.minerRate(s, st, gm);
     return (st.clickFlat * gm + fromMiners) * st.clickMult * (1 + Game.streakBonus(s, st));
   };
 
@@ -491,14 +494,16 @@
     const runes = Math.max(0, Math.floor(d.seeds.runeLogMult * Math.log10(Math.max(1, run.runBlank / d.seeds.runeDiv))));
     // The tutorial run pays a fixed amount so lingering in Asgard can't snowball it.
     if (s.meta.ragnaroks === 0 && !failed) {
-      return { base, runes, tier: null, speedBonus: 0, curseMult: 1, seedMult: 1, failed: false, firstRun: true, total: d.seeds.firstRun };
+      return { base, runes, tier: null, speedBonus: 0, curseMult: 1, fateMult: 1, seedMult: 1, failed: false, firstRun: true, total: d.seeds.firstRun };
     }
     const tier = failed ? null : Game.speedTier(s);
     const speedBonus = tier ? tier.bonus : 0;
     const curseMult = run.curses.reduce((m, c) => m * (I.curses[c] ? I.curses[c].seedMult : 1), 1);
-    let total = Math.floor((base + runes) * st.seedMult * curseMult * (1 + speedBonus));
+    const fate = run.fate && I.fates[run.fate];
+    const fateMult = (fate && fate.seedMult) || 1;
+    let total = Math.floor((base + runes) * st.seedMult * curseMult * fateMult * (1 + speedBonus));
     if (failed) total = Math.floor(total * d.seeds.failMult);
-    return { base, runes, tier, speedBonus, curseMult, seedMult: st.seedMult, failed: !!failed, total: Math.max(1, total) };
+    return { base, runes, tier, speedBonus, curseMult, fateMult, seedMult: st.seedMult, failed: !!failed, total: Math.max(1, total) };
   };
 
   Game.ragnarok = function (s) {
@@ -527,7 +532,7 @@
     const st = statsFor(s);
     let rate = Game.productionRate(s, st);
     if (offline) rate *= st.offlineRate;
-    addBlank(s, rate * dt + run.blank * st.interest * dt, st);
+    addBlank(s, rate * dt + (st.clickOnly ? 0 : run.blank * st.interest * dt), st);
 
     // Auto-imbue: continuously spend a share of Blank Runes across weighted realms.
     if (permLevel(s.meta, 'shop_auto')) {
@@ -567,7 +572,7 @@
       const g = s.run.runes[r] - (beforeRunes[r] || 0);
       if (g > 0.0001) runes[r] = g;
     }
-    return { seconds, used, capped: seconds > capSec, mined: s.run.runBlank - beforeMined, blankDelta: s.run.blank - before, runes };
+    return { seconds, used, capped: seconds > capSec, clickOnly: !!st.clickOnly, mined: s.run.runBlank - beforeMined, blankDelta: s.run.blank - before, runes };
   };
 
   // ------------------------------------------------------------------ save / load

@@ -340,3 +340,33 @@ test('a Blank Rune stock above the cap is kept, not clamped into a negative gain
   assert.equal(s.run.runBlank, 0);
   assert.ok(Number.isFinite(Game.productionRate(s)));
 });
+
+test("Ymir's Hands: no passive income, miners power clicks instead, Seeds x1.4", () => {
+  const s = fresh();
+  s.meta.ragnaroks = 1;
+  rich(s);
+  for (let i = 0; i < 5; i++) Game.unlockNext(s);
+  s.run.pending = null;
+  for (let i = 0; i < 20; i++) Game.buyUpgrade(s, 's_miner');
+  Game.buyUpgrade(s, 'j_labor');
+  s.run.boons = { rime_rune: 1 };
+  const normalClick = Game.clickValue(s);
+  const normalSeeds = Game.seedReward(s).total;
+
+  s.run.fate = 'ymirs_hands';
+  const st = Game.stats(s);
+  assert.equal(Game.productionRate(s, st), 0);
+  assert.ok(Game.clickValue(s, st) > normalClick);
+  assert.ok(Math.abs(Game.clickValue(s, st) - normalClick - D.fates.find((f) => f.id === "ymirs_hands").effects[1].v * Game.minerRate(s, st) * st.clickMult) < 1e-6);
+
+  s.run.blank = 100;
+  Game.tick(s, 10);
+  assert.equal(s.run.blank, 100, 'no miners, flat income or stored-rune growth');
+  const off = Game.applyOffline(s, 3600);
+  assert.equal(off.mined, 0);
+  assert.equal(off.clickOnly, true);
+
+  const r = Game.seedReward(s);
+  assert.equal(r.fateMult, 1.4);
+  assert.ok(r.total > normalSeeds);
+});

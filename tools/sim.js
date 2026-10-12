@@ -5,6 +5,7 @@
  *
  *   node tools/sim.js [runs=3] [clicksPerSecond=5]
  *   TRACE=1 node tools/sim.js 1   # stats at each unlock
+ *   FATE=ymirs_hands node tools/sim.js 3   # force a fate from run 2
  */
 'use strict';
 require('../js/data.js');
@@ -68,7 +69,12 @@ function playRun(s, label) {
   let clickAcc = 0, decideAcc = 0;
   const hardLimit = 4 * 3600;
   while (s.run.activeTime < hardLimit) {
-    if (s.run.pending) { Game.choose(s, 0); continue; }
+    if (s.run.pending) {
+      // FATE=<id> forces that fate whenever a fate is offered.
+      if (process.env.FATE && s.run.pending.type === 'fate') s.run.pending.options[0] = process.env.FATE;
+      Game.choose(s, 0);
+      continue;
+    }
     if (s.run.ended) break;
     clickAcc += CPS * DT;
     while (clickAcc >= 1) { Game.click(s); clickAcc--; }
