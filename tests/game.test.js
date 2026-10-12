@@ -370,3 +370,31 @@ test("Ymir's Hands: no passive income, miners power clicks instead, Seeds x1.4",
   assert.equal(r.fateMult, 1.4);
   assert.ok(r.total > normalSeeds);
 });
+
+test('skipping the tutorial starts a full run at once, without the Blessing or the fixed gift', () => {
+  const s = fresh();
+  s.run.blank = 50;
+  assert.equal(Game.tutorialDone(s.meta), false);
+  assert.ok(Game.skipTutorial(s));
+  assert.equal(Game.tutorialDone(s.meta), true);
+  assert.equal(s.meta.ragnaroks, 0, 'not counted as a Ragnarök');
+  assert.equal(s.meta.seeds, 0);
+  assert.equal(s.run.blessing, false);
+  assert.equal(s.run.blank, 0, 'the run restarts');
+  assert.equal(s.run.pending.type, 'fate');
+  assert.equal(Game.skipTutorial(s), false, 'only once');
+  Game.choose(s, 0);
+  assert.ok(Game.speedTier(s));
+  // Realm unlocks offer boons straight away.
+  rich(s);
+  Game.unlockNext(s);
+  assert.equal(s.run.pending.type, 'boon');
+  s.run.pending = null;
+  // The first Ragnarök pays a normal, scaling reward rather than the fixed gift.
+  while (Game.unlockNext(s)) s.run.pending = null;
+  s.run.runBlank = 1e14;
+  const r = Game.ragnarok(s);
+  assert.equal(r.first, false);
+  assert.ok(!r.firstRun);
+  assert.ok(r.runes > 0);
+});

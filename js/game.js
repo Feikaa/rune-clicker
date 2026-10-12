@@ -35,11 +35,16 @@
   function newMeta() {
     return {
       seeds: 0, totalSeeds: 0, ragnaroks: 0, perm: {}, discovered: {},
-      lifetimeBlank: 0, bestTime: null, history: [], seenOnOwn: false,
+      lifetimeBlank: 0, bestTime: null, history: [], seenOnOwn: false, skippedTutorial: false,
     };
   }
 
   function permLevel(meta, id) { return meta.perm[id] || 0; }
+
+  // The tutorial (run 1 with Odin's Blessing) ends at the first Ragnarök, or
+  // when the player skips it. After that fates, boons and speed tiers apply.
+  const tutorialDone = (meta) => meta.ragnaroks > 0 || !!meta.skippedTutorial;
+  Game.tutorialDone = tutorialDone;
   Game.permLevel = permLevel;
 
   function newRun(meta) {
@@ -50,14 +55,14 @@
       activeTime: 0, runBlank: 0, clicks: 0,
       streak: 0, lastClickAt: -999, bonusMiners: 0,
       pending: null, rerolls: 0, autoWeights: {},
-      blessing: meta.ragnaroks === 0, ended: null,
+      blessing: !tutorialDone(meta), ended: null,
     };
     d.realmOrder.forEach((r) => { run.runes[r] = 0; });
     const st = statsFor({ meta, run });
     run.blank = st.startBlank;
     run.bonusMiners = st.startMiners;
     run.rerolls = st.rerolls;
-    if (meta.ragnaroks >= 1) run.pending = { type: 'fate', options: rollFates(meta) };
+    if (tutorialDone(meta)) run.pending = { type: 'fate', options: rollFates(meta) };
     return run;
   }
 
@@ -378,7 +383,7 @@
       emit(s, 'timerBeaten', { curse: s.run.timer.curse });
       s.run.timer = null;
     }
-    if (s.meta.ragnaroks >= 1) {
+    if (tutorialDone(s.meta)) {
       const options = rollBoonOffer(s, next);
       if (options.length) s.run.pending = { type: 'boon', realm: next, options };
     }
@@ -386,6 +391,15 @@
   };
 
   Game.ragnarokReady = (s) => has(s.run, 'asgard');
+
+  // Skip the tutorial: the current run restarts as a full run (fate pick,
+  // boons, speed tiers) without Odin's Blessing or the first-Ragnarök gift.
+  Game.skipTutorial = function (s) {
+    if (tutorialDone(s.meta)) return false;
+    s.meta.skippedTutorial = true;
+    s.run = newRun(s.meta);
+    return true;
+  };
 
   // ------------------------------------------------------------------ fates, boons, curses
   function shuffle(a) {
@@ -475,13 +489,13 @@
 
   // ------------------------------------------------------------------ Ragnarök
   Game.speedTier = function (s) {
-    if (s.meta.ragnaroks === 0) return null;
+    if (!tutorialDone(s.meta)) return null;
     const t = s.run.activeTime;
     return D().seeds.speedTiers.find((x) => t <= x.max);
   };
 
   Game.nextSpeedTarget = function (s) {
-    if (s.meta.ragnaroks === 0) return null;
+    if (!tutorialDone(s.meta)) return null;
     const t = s.run.activeTime;
     return D().seeds.speedTiers.find((x) => t <= x.max && x.bonus > 0) || null;
   };
@@ -493,7 +507,7 @@
     // Log curve: production explodes late, so a root curve would pay out far too much.
     const runes = Math.max(0, Math.floor(d.seeds.runeLogMult * Math.log10(Math.max(1, run.runBlank / d.seeds.runeDiv))));
     // The tutorial run pays a fixed amount so lingering in Asgard can't snowball it.
-    if (s.meta.ragnaroks === 0 && !failed) {
+    if (!tutorialDone(s.meta) && !failed) {
       return { base, runes, tier: null, speedBonus: 0, curseMult: 1, fateMult: 1, seedMult: 1, failed: false, firstRun: true, total: d.seeds.firstRun };
     }
     const tier = failed ? null : Game.speedTier(s);
@@ -513,7 +527,7 @@
     const meta = s.meta;
     meta.seeds += reward.total;
     meta.totalSeeds += reward.total;
-    const first = meta.ragnaroks === 0;
+    const first = !tutorialDone(meta);
     meta.ragnaroks++;
     if (!failed && (meta.bestTime === null || s.run.activeTime < meta.bestTime)) meta.bestTime = s.run.activeTime;
     meta.history.push({ time: Math.round(s.run.activeTime), seeds: reward.total, failed, fate: s.run.fate, curses: s.run.curses.slice() });

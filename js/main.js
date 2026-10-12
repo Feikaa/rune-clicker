@@ -65,7 +65,7 @@
     evs.forEach((e) => {
       if (e.type === 'discover') UI.discoverToast(e.key);
       else if (e.type === 'double') UI.pop(lastImbueEl, `Double! +${UI.fmt(e.extra)}`, window.RC.DATA.realms[e.realm].color);
-      else if (e.type === 'unlock' && e.realm === 'svartalfheim' && state.meta.ragnaroks === 0) UI.toast('<div><b>The World Tree</b><p>Yggdrasil reveals itself. A new tab has opened.</p></div>', '#7fd6a8');
+      else if (e.type === 'unlock' && e.realm === 'svartalfheim' && !Game.tutorialDone(state.meta)) UI.toast('<div><b>The World Tree</b><p>Yggdrasil reveals itself. A new tab has opened.</p></div>', '#7fd6a8');
       else if (e.type === 'unlock' && e.realm === 'asgard') UI.toast('<div><b>Ragnarök</b><p>Asgard is reached. The end of the world is yours to call.</p></div>', '#ff8a73', 7000);
       else if (e.type === 'freeMiner') UI.toast("<div><b>Tinkerer's Luck</b><p>A second miner tags along for free.</p></div>", '#c9824a', 2500);
       else if (e.type === 'freeBoon') UI.toast(`<div><b>Wanderer's Road</b><p>You start with ${Game.lookup().boons[e.boon].name}.</p></div>`, '#c6d6ff');
@@ -121,6 +121,16 @@
           : UI.runInfoModal(state), true);
         break;
       case 'close': closeInfo(); break;
+      case 'skipTutorial': {
+        const started = state.run.activeTime > 5 || state.run.unlocked.length > 1;
+        if (started && !window.confirm("Skip the tutorial? This run restarts without Odin's Blessing, and you give up the 5 Seeds from the first Ragnarök.")) break;
+        if (Game.skipTutorial(state)) {
+          if (modalKind === 'info') { modalKind = null; UI.closeModal(); }
+          UI.ui.tab = 'realms'; UI.ui.realm = 'midgard';
+          save();
+        }
+        break;
+      }
       case 'save': save(); UI.toast('<div><b>Saved</b></div>', null, 1500); break;
       case 'export': {
         const data = btoa(unescape(encodeURIComponent(Game.serialize(state))));

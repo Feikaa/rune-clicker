@@ -41,6 +41,7 @@ Effects are declared as data, for example `{ stat: 'minerMult', op: 'mul', v: 1.
 
 - **Language:** plain JavaScript, no build.
 - **Odin's Blessing:** stays constant for the whole of run 1, then ends (unlocks cost 75% less, upgrades 60% less).
+- **Skipping the tutorial** (on the intro screen, or in ⚙ during run 1) starts a full run straight away with a fate pick, boons and speed tiers, but without Odin's Blessing or the 5-Seed first-Ragnarök gift.
 - **First Ragnarök** pays a fixed 5 Seeds. Later payouts are a base amount plus a log curve on runes mined, so staying in Asgard to grind adds only a few Seeds.
 - **Mixed costs:** from Niflheim on, most upgrades also cost runes from a thematically linked earlier realm (e.g. *Fire-Tempered* steel is quenched with Niflheim ice), which keeps older realms worth imbuing.
 - **Bulk imbue:** ×1, ×10, ×100 and Max are always available, and the next-realm card has an *Imbue what's missing* button. Auto-imbue (weighted per realm) is a Seed purchase.

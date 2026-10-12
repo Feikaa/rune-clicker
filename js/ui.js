@@ -71,7 +71,7 @@
   function tabsAvailable(s) {
     const t = [['realms', 'Realms']];
     if (Game.has(s.run, 'svartalfheim')) t.push(['tree', 'World Tree']);
-    if (s.meta.ragnaroks > 0 || s.meta.seeds > 0) t.push(['seeds', 'Seeds']);
+    if (Game.tutorialDone(s.meta) || s.meta.seeds > 0) t.push(['seeds', 'Seeds']);
     t.push(['settings', '⚙']);
     return t;
   }
@@ -243,6 +243,7 @@
       <div class="btn-row"><button class="btn" data-act="save">Save now</button><button class="btn" data-act="export">Export</button><button class="btn" data-act="import">Import</button></div>
       <div class="btn-row" style="margin-top:8px"><button class="btn danger" data-act="reset">Erase everything</button></div>
     </div>
+    ${Game.tutorialDone(s.meta) ? '' : `<div class="card"><h3>Tutorial</h3>${skipTutorialHtml()}</div>`}
     <div class="card"><h3>How to play</h3>
       <p class="muted" style="margin-top:8px">Click the stone to mine Blank Runes. Imbue them in a realm to make that realm's runes, spend runes on upgrades, and gather the mix of runes each new realm demands. Reach Asgard to unleash Ragnarök and earn Yggdrasil Seeds that carry over. Space bar also mines.</p>
     </div>`;
@@ -265,7 +266,7 @@
   function structureKey(s) {
     const r = s.run;
     return JSON.stringify([ui.tab, ui.realm, r.unlocked, r.upgrades, r.tree, r.boons, r.fate, r.curses, !!r.timer, r.blessing,
-      s.meta.perm, s.meta.ragnaroks, s.meta.seeds > 0, r.autoWeights, s.meta.history.length]);
+      s.meta.perm, s.meta.ragnaroks, s.meta.skippedTutorial, s.meta.seeds > 0, r.autoWeights, s.meta.history.length]);
   }
 
   function setHtml(el, key, html) {
@@ -287,7 +288,7 @@
     const body = $('#tab-' + ui.tab);
     const html = ui.tab === 'realms' ? realmsTab(s, st) : ui.tab === 'tree' ? treeTab(s, st) : ui.tab === 'seeds' ? seedsTab(s) : settingsTab(s);
     setHtml(body, key, html);
-    $('#seedsBox').classList.toggle('hidden', !(s.meta.ragnaroks > 0 || s.meta.seeds > 0));
+    $('#seedsBox').classList.toggle('hidden', !(Game.tutorialDone(s.meta) || s.meta.seeds > 0));
     refresh(s, st);
   }
 
@@ -485,12 +486,20 @@
       <div class="actions"><button class="btn primary" data-act="close">Back to work</button></div>`;
   }
 
+  function skipTutorialHtml() {
+    return `<div class="skip-box">
+      <p><b>Played before?</b> Skip the tutorial and start with fates and boons right away. You give up Odin's Blessing and the ${D().seeds.firstRun} Seeds from the first Ragnarök.</p>
+      <button class="btn" data-act="skipTutorial">Skip the tutorial</button>
+    </div>`;
+  }
+
   function introModal() {
     return `<div class="discover-glyph" style="color:#ffd34d">${G.glyph('ansuz', { size: 56 })}</div>
       <h2>Rune Clicker</h2><p class="lead">The nine realms hang from the branches of Yggdrasil.</p>
       <p>You are a runecarver of Midgard. Tap the stone to mine <b>Blank Runes</b>. Imbue them into the realms you reach to make realm runes, and spend those to climb the World Tree toward Asgard.</p>
       <p class="muted">Odin watches your first climb. His blessing makes the way cheaper. It will not last.</p>
-      <div class="actions"><button class="btn primary" data-act="close">Take up the chisel</button></div>`;
+      <div class="actions"><button class="btn primary" data-act="close">Take up the chisel</button></div>
+      ${skipTutorialHtml()}`;
   }
 
   function blessingText() {
