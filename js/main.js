@@ -171,6 +171,16 @@
           : UI.runInfoModal(state), true);
         break;
       case 'close': closeInfo(); break;
+      case 'resetRun':
+        queueModal(UI.resetRunModal(state), true);
+        break;
+      case 'resetRunConfirm':
+        if (modalKind === 'info') { modalKind = null; UI.closeModal(); }
+        Game.resetRun(state);
+        UI.ui.tab = 'realms'; UI.ui.realm = 'midgard';
+        UI.toast('<div><b>The run begins anew</b><p>Back to Midgard.</p></div>', null, 2500);
+        save();
+        break;
       case 'skipTutorial': {
         const started = state.run.activeTime > 5 || state.run.unlocked.length > 1;
         if (started && !window.confirm("Skip the tutorial? This run restarts without Odin's Blessing, and you give up the 5 Seeds from the first Ragnarök.")) break;

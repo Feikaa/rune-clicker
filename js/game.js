@@ -404,6 +404,16 @@
 
   // Skip the tutorial: the current run restarts as a full run (fate pick,
   // boons, speed tiers) without Odin's Blessing or the first-Ragnarök gift.
+  // Abandon the current run: start it over with no Seeds paid. Seeds, permanent
+  // upgrades and the tutorial state are untouched.
+  Game.resetRun = function (s) {
+    const meta = s.meta;
+    meta.history.push({ time: Math.round(s.run.activeTime), seeds: 0, reset: true, fate: s.run.fate, curses: s.run.curses.slice() });
+    if (meta.history.length > 20) meta.history.shift();
+    s.run = newRun(meta);
+    return true;
+  };
+
   Game.skipTutorial = function (s) {
     if (tutorialDone(s.meta)) return false;
     s.meta.skippedTutorial = true;

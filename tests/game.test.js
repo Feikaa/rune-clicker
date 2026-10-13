@@ -406,3 +406,41 @@ test('skipping the tutorial starts a full run at once, without the Blessing or t
   assert.ok(!r.firstRun);
   assert.ok(r.runes > 0);
 });
+
+test('resetting a run starts it over, pays nothing and keeps permanent progress', () => {
+  const s = fresh();
+  s.meta.ragnaroks = 2;
+  s.meta.seeds = 7;
+  s.meta.perm.sk_head = 1;
+  rich(s);
+  while (Game.unlockNext(s)) s.run.pending = null;
+  s.run.fate = 'fimbulwinter';
+  s.run.boons = { deep_veins: 2 };
+  s.run.curses = ['fenrirs_chain'];
+  s.run.timer = { curse: 'fenrirs_chain', endsAt: 999 };
+  s.run.activeTime = 321;
+  Game.resetRun(s);
+  assert.deepEqual(s.run.unlocked, ['midgard']);
+  assert.deepEqual(s.run.boons, {});
+  assert.deepEqual(s.run.curses, []);
+  assert.equal(s.run.timer, null);
+  assert.equal(s.run.activeTime, 0);
+  assert.equal(s.run.runes.asgard, 0);
+  assert.equal(s.meta.seeds, 7);
+  assert.equal(s.meta.ragnaroks, 2, 'not counted as a Ragnarök');
+  assert.equal(s.run.bonusMiners, 3, 'Head Start still applies');
+  assert.equal(s.run.pending.type, 'fate');
+  const h = s.meta.history[s.meta.history.length - 1];
+  assert.equal(h.reset, true);
+  assert.equal(h.seeds, 0);
+  assert.equal(h.time, 321);
+});
+
+test('resetting during the tutorial keeps the tutorial and its Blessing', () => {
+  const s = fresh();
+  s.run.blank = 100;
+  Game.resetRun(s);
+  assert.equal(s.run.blessing, true);
+  assert.equal(s.run.pending, null);
+  assert.equal(s.run.blank, 0);
+});

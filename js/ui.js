@@ -345,7 +345,7 @@
 
   function settingsTab(s) {
     const m = s.meta;
-    const hist = m.history.slice().reverse().slice(0, 8).map((h) => `<span>${h.failed ? 'Failed' : 'Ragnarök'}${h.fate ? ' · ' + esc(Game.lookup().fates[h.fate].name) : ''}</span><span>${fmtTime(h.time)} · ${h.seeds} seeds</span>`).join('');
+    const hist = m.history.slice().reverse().slice(0, 8).map((h) => `<span>${h.reset ? 'Reset' : h.failed ? 'Failed' : 'Ragnarök'}${h.fate ? ' · ' + esc(Game.lookup().fates[h.fate].name) : ''}</span><span>${fmtTime(h.time)} · ${h.seeds} seeds</span>`).join('');
     return `<div class="card">
       <h3>Saga</h3>
       <div class="stats" style="margin-top:10px">
@@ -356,6 +356,11 @@
         <span>Clicks this run</span><span data-val="clicks">0</span>
         ${hist}
       </div>
+    </div>
+    <div class="card">
+      <h3>This run</h3>
+      <p class="muted" style="margin:8px 0 10px">Start the current run over from Midgard. You get no Seeds for it, but keep everything Seeds have bought.</p>
+      <div class="btn-row"><button class="btn danger" data-act="resetRun">Reset run</button></div>
     </div>
     <div class="card">
       <h3>Sound</h3>
@@ -652,6 +657,14 @@
     el.classList.add('doubled');
   }
 
+  function resetRunModal(s) {
+    const est = Game.ragnarokReady(s) ? `<p class="center">Asgard is reached: ending with Ragnarök instead would pay <b class="seed-pill">${fmt(Game.seedReward(s).total)}</b> Seeds.</p>` : '';
+    return `<h2>Reset This Run?</h2><p class="lead">Runes, upgrades, realms${Game.tutorialDone(s.meta) ? ', fate, boons and curses' : ''} are lost, and no Seeds are paid.</p>
+      ${est}
+      <p class="center muted">Your Seeds and everything they have bought stay with you.</p>
+      <div class="actions"><button class="btn" data-act="close">Keep playing</button><button class="btn danger" data-act="resetRunConfirm">Reset run</button></div>`;
+  }
+
   function runInfoModal(s) {
     const run = s.run, I = Game.lookup();
     const items = [];
@@ -667,7 +680,7 @@
   }
 
   root.RC.UI = {
-    ui, fmt, fmtRound, fmtTime, blessingText, pop, animateTreeGrowth, render, refresh, renderStone, floater, toast, discoverToast,
+    ui, fmt, fmtRound, fmtTime, blessingText, pop, animateTreeGrowth, resetRunModal, render, refresh, renderStone, floater, toast, discoverToast,
     openModal, closeModal, modalOpen, choiceModal, ragnarokConfirm, ragnarokResult, failedModal, offlineModal, introModal, runInfoModal, boonDesc,
   };
 })(typeof globalThis !== 'undefined' ? globalThis : this);
