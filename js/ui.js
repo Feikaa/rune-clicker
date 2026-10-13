@@ -96,7 +96,7 @@
       ${G.upgradeIcon(u, lvl, u.max)}
       <span class="name">${esc(u.name)}<span class="lvl">${lvlLabel(lvl, u.max)}</span></span>
       <span class="cost">${maxed ? 'MAX' : costSpans(Game.upgradeCost(s, u.id, st))}</span>
-      <span class="desc">${esc(u.desc)}</span>
+      <span class="desc">${esc(u.desc)}${u.live ? ` <span class="live" data-val="live:${u.id}"></span>` : ''}</span>
     </button></li>`;
   }
 
@@ -449,6 +449,7 @@
       case 'click': return '+' + fmtRound(Game.clickValue(s, st));
       case 'streak': { const b = Game.streakBonus(s, st); return b > 0.005 ? `streak +${Math.round(b * 100)}%` : ''; }
       case 'rune': return fmt(run.runes[a]);
+      case 'live': return liveDesc(s, a, st);
       case 'imbueMax': { const n = Game.maxImbuable(s, a, st); return n ? `(${fmt(n * Game.imbueYield(s, a, st))})` : ''; }
       case 'clock': return fmtTime(run.activeTime);
       case 'target': {
@@ -465,6 +466,18 @@
       case 'clicks': return fmt(run.clicks);
       default: return '';
     }
+  }
+
+  // Live numbers in upgrade descriptions, e.g. what Forge Bond adds per click.
+  function liveDesc(s, id, st) {
+    const u = Game.lookup().upgrades[id];
+    if (u.live === 'bond') {
+      const lvl = s.run.upgrades[id] || 0;
+      const perLevel = u.effects[0].v * Game.minerRate(s, st) * st.clickMult;
+      const amount = (n) => (n > 0 && n < 0.5 ? 'less than +1' : `+${fmtRound(n)}`);
+      return lvl < u.max ? `(next level: ${amount(perLevel)} per click)` : `(${amount(perLevel * lvl)} per click)`;
+    }
+    return '';
   }
 
   // Cheap per-frame update of numbers and button states.

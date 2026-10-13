@@ -300,3 +300,4 @@ textarea.save { width: 100%; min-height: 110px; background: var(--bg); color: va
 .tree-burst { fill: none; stroke: #fff3c4; filter: drop-shadow(0 0 6px #ffd34d); pointer-events: none; }
 .tree-map.tree-flash { animation: treeFlash 0.8s ease-out; }
 @keyframes treeFlash { 0% { filter: brightness(1); } 20% { filter: brightness(1.45) drop-shadow(0 0 14px #7fd6a888); } 100% { filter: brightness(1); } }
+.item .live { color: var(--text); opacity: 0.85; white-space: nowrap; font-variant-numeric: tabular-nums; }

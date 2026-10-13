@@ -141,7 +141,7 @@
       { id: 's_miner', realm: 'svartalfheim', name: 'Dwarven Miner', desc: '+1 auto-miner', base: 2, growth: 1.17, max: 150, effects: [{ stat: 'miners', op: 'add', v: 1 }] },
       { id: 's_shafts', realm: 'svartalfheim', name: 'Deeper Shafts', desc: '+0.1 Blank Runes/s per miner', base: 6, growth: 2, max: 8, effects: [{ stat: 'minerBase', op: 'add', v: 0.1 }] },
       { id: 's_picks', realm: 'svartalfheim', name: 'Rune-Steel Picks', desc: 'Miners ×1.4', base: 10, growth: 3, max: 6, effects: [{ stat: 'minerMult', op: 'mul', v: 1.3 }] },
-      { id: 's_bond', realm: 'svartalfheim', also: 'midgard', name: 'Forge Bond', desc: 'Clicks add 2% of miner rate', base: 15, growth: 3, max: 5, effects: [{ stat: 'clickFromMiners', op: 'add', v: 0.02 }] },
+      { id: 's_bond', realm: 'svartalfheim', also: 'midgard', name: 'Forge Bond', desc: "Add 2% of your miners' rate to each click", live: 'bond', base: 15, growth: 3, max: 5, effects: [{ stat: 'clickFromMiners', op: 'add', v: 0.02 }] },
       { id: 's_ingots', realm: 'svartalfheim', name: 'Ingot Stacks', desc: 'Blank Rune cap ×1.4', base: 8, growth: 2, max: 10, effects: [{ stat: 'capMult', op: 'mul', v: 1.4 }] },
 
       // Niflheim
